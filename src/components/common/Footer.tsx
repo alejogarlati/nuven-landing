@@ -75,16 +75,10 @@ export function Footer() {
           </p>
           <div className="flex items-center gap-6">
             <a
-              href="#"
+              href="#contacto"
               className="text-neutral-400 hover:text-white text-sm transition-colors"
             >
-              Política de Privacidad
-            </a>
-            <a
-              href="#"
-              className="text-neutral-400 hover:text-white text-sm transition-colors"
-            >
-              Términos de Servicio
+              Contacto
             </a>
           </div>
         </div>

@@ -10,6 +10,7 @@ import { useInView } from '@/src/hooks/useInView';
 
 export function Contact() {
   const { email, phone, formatedPhone, links } = siteConfig;
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
   const ref = useRef<HTMLElement>(null);
   const turnstileRef = useRef<TurnstileInstance>(null);
   const isInView = useInView(ref, { once: true, margin: '-100px' });
@@ -246,25 +247,28 @@ export function Contact() {
                 </div>
 
                 <div className="py-2">
-                  <Turnstile
-                    ref={turnstileRef}
-                    siteKey={
-                      process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ||
-                      '1x00000000000000000000AA'
-                    }
-                    onSuccess={(token) => setTurnstileToken(token)}
-                    onExpire={() => setTurnstileToken(null)}
-                    onError={() => {
-                      setTurnstileToken(null);
-                      setErrorMessage(
-                        'Error al cargar Turnstile. Por favor recarga la página.',
-                      );
-                    }}
-                    options={{
-                      theme: 'dark',
-                    }}
-                    className="flex justify-center"
-                  />
+                  {turnstileSiteKey ? (
+                    <Turnstile
+                      ref={turnstileRef}
+                      siteKey={turnstileSiteKey}
+                      onSuccess={(token) => setTurnstileToken(token)}
+                      onExpire={() => setTurnstileToken(null)}
+                      onError={() => {
+                        setTurnstileToken(null);
+                        setErrorMessage(
+                          'Error al cargar Turnstile. Por favor recarga la página.',
+                        );
+                      }}
+                      options={{
+                        theme: 'dark',
+                      }}
+                      className="flex justify-center"
+                    />
+                  ) : (
+                    <p className="text-center text-xs text-neutral-400">
+                      Verificación de seguridad no configurada en este entorno.
+                    </p>
+                  )}
                 </div>
 
                 {status === 'error' && (

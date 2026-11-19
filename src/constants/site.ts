@@ -6,7 +6,7 @@ export const siteConfig = {
     'Soluciones tecnológicas de alto impacto para negocios que buscan escalar. Especialistas en desarrollo web premium, software a medida y diseño de vanguardia.',
   siteUrl: 'https://nuven.com.ar',
   language: 'es-AR',
-  ogImage: '/og/default-og.png',
+  ogImage: '/web-app-manifest-512x512.png',
   phone: '5493812203431',
   email: 'contacto@nuven.com.ar',
   address: 'Ejercito del Norte 28',

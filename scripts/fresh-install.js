@@ -9,30 +9,19 @@ try {
   const nodeModulesPath = path.join(process.cwd(), 'node_modules');
   if (fs.existsSync(nodeModulesPath)) {
     console.log('🗑️  Eliminando node_modules...');
-    if (isWindows) {
-      execSync(`rmdir /s /q "${nodeModulesPath}"`, {
-        stdio: 'inherit',
-        shell: true,
-      });
-    } else {
-      execSync(`rm -rf "${nodeModulesPath}"`, { stdio: 'inherit' });
-    }
+    fs.rmSync(nodeModulesPath, { recursive: true, force: true });
     console.log('✅ node_modules eliminado');
   } else {
     console.log('ℹ️  No se encontró node_modules');
   }
 
-  const lockFilePath = path.join(process.cwd(), 'bun.yaml');
+  const lockFilePath = path.join(process.cwd(), 'bun.lock');
   if (fs.existsSync(lockFilePath)) {
-    console.log('🗑️  Eliminando bun.yaml...');
-    if (isWindows) {
-      execSync(`del "${lockFilePath}"`, { stdio: 'inherit', shell: true });
-    } else {
-      fs.unlinkSync(lockFilePath);
-    }
-    console.log('✅ bun.yaml eliminado');
+    console.log('🗑️  Eliminando bun.lock...');
+    fs.rmSync(lockFilePath, { force: true });
+    console.log('✅ bun.lock eliminado');
   } else {
-    console.log('ℹ️  No se encontró bun.yaml');
+    console.log('ℹ️  No se encontró bun.lock');
   }
 
   console.log('📦 Instalando dependencias...');

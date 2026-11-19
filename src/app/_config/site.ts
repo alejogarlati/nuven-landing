@@ -1,49 +1,38 @@
+import { siteConfig } from '@/src/constants/site';
+
 import {
   LocalBusinessSchemaInput,
   OrganizationSchemaInput,
   WebSiteSchemaInput,
 } from './seo-schema';
 
-//TODO Adaptar segun la empresa
-// Copiás site.ts y cambiás:
-// siteUrl
-// organizationConfig
-// localBusinessConfig
-// webSiteConfig
-// Ajustás el logoUrl al archivo que uses en esa landing.
-// Si el cliente es solo “online” y no tiene local físico, podés no usar LocalBusiness y solo dejar Organization + WebSite.
-
-export const siteUrl = 'https://ejemplo-agencia.com';
+export const siteUrl = siteConfig.siteUrl;
 
 export const organizationConfig: OrganizationSchemaInput = {
-  name: 'Ejemplo Agencia',
-  legalName: 'Ejemplo Agencia SRL',
+  name: siteConfig.name,
+  legalName: siteConfig.name,
   url: siteUrl,
-  logoUrl: `${siteUrl}/logo.png`,
+  logoUrl: `${siteUrl}/web-app-manifest-512x512.png`,
   sameAs: {
-    instagram: 'https://www.instagram.com/ejemplo',
-    linkedin: 'https://www.linkedin.com/company/ejemplo',
+    instagram: siteConfig.links.instagram,
   },
 };
 
 export const localBusinessConfig: LocalBusinessSchemaInput = {
-  name: 'Ejemplo Agencia',
+  name: siteConfig.name,
   url: siteUrl,
-  logoUrl: `${siteUrl}/logo.png`,
-  telephone: '+54 381 000 0000',
+  logoUrl: `${siteUrl}/web-app-manifest-512x512.png`,
+  telephone: siteConfig.formatedPhone,
   priceRange: '$$',
-  streetAddress: 'Av. Siempre Viva 123',
-  addressLocality: 'San Miguel de Tucumán',
+  streetAddress: siteConfig.address,
+  addressLocality: siteConfig.province,
   addressRegion: 'Tucumán',
   postalCode: '4000',
   addressCountry: 'AR',
-  geoLatitude: -26.8241,
-  geoLongitude: -65.2226,
   openingHours: ['Mo-Fr 09:00-18:00'],
 };
 
 export const webSiteConfig: WebSiteSchemaInput = {
-  name: 'Ejemplo Agencia',
+  name: siteConfig.name,
   url: siteUrl,
-  potentialActionSearchUrl: `${siteUrl}/buscar?q=`,
 };

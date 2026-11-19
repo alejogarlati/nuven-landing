@@ -4,14 +4,107 @@ import { Resend } from 'resend';
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
 
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const RATE_LIMIT_MAX = 5;
+const ipRequests = new Map<string, { count: number; resetAt: number }>();
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function stripHeaderBreaks(value: string): string {
+  return value.replace(/[\r\n]+/g, ' ').trim();
+}
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = ipRequests.get(ip);
+  if (!entry || now > entry.resetAt) {
+    ipRequests.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return false;
+  }
+  if (entry.count >= RATE_LIMIT_MAX) {
+    return true;
+  }
+  entry.count += 1;
+  return false;
+}
+
 export async function POST(request: Request) {
-  const resend = new Resend(process.env.RESEND_API_KEY);
   try {
+    const clientIp =
+      request.headers.get('cf-connecting-ip') ||
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      'unknown';
+
+    if (isRateLimited(clientIp)) {
+      return NextResponse.json(
+        { error: 'Demasiadas solicitudes. Por favor intenta más tarde.' },
+        { status: 429 },
+      );
+    }
+
     const body = await request.json();
-    const { nombre, email, telefono, descripcion, turnstileToken } = body;
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json(
+        { error: 'Solicitud inválida' },
+        { status: 400 },
+      );
+    }
+
+    const rawNombre = body.nombre;
+    const rawEmail = body.email;
+    const rawTelefono = body.telefono;
+    const rawDescripcion = body.descripcion;
+    const rawTurnstileToken = body.turnstileToken;
+
+    if (
+      typeof rawNombre !== 'string' ||
+      typeof rawEmail !== 'string' ||
+      typeof rawDescripcion !== 'string' ||
+      typeof rawTurnstileToken !== 'string' ||
+      (rawTelefono !== undefined && typeof rawTelefono !== 'string')
+    ) {
+      return NextResponse.json(
+        { error: 'Formato de campos inválido' },
+        { status: 400 },
+      );
+    }
+
+    const nombre = stripHeaderBreaks(rawNombre);
+    const email = stripHeaderBreaks(rawEmail);
+    const telefono = rawTelefono ? stripHeaderBreaks(rawTelefono) : '';
+    const descripcion = rawDescripcion.trim();
+    const turnstileToken = rawTurnstileToken.trim();
+
+    if (
+      !nombre ||
+      nombre.length > 120 ||
+      !email ||
+      email.length > 254 ||
+      !EMAIL_RE.test(email) ||
+      telefono.length > 40 ||
+      !descripcion ||
+      descripcion.length > 3000 ||
+      !turnstileToken ||
+      turnstileToken.length > 2048
+    ) {
+      return NextResponse.json(
+        { error: 'Por favor revisa los datos ingresados' },
+        { status: 400 },
+      );
+    }
 
     // 0. Environment Validation
-    if (!process.env.TURNSTILE_SECRET_KEY) {
+    const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
+    if (!turnstileSecret) {
       console.error('Missing TURNSTILE_SECRET_KEY');
       return NextResponse.json(
         { error: 'Error de configuración del servidor (Turnstile)' },
@@ -19,7 +112,8 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!process.env.RESEND_API_KEY) {
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (!resendApiKey) {
       console.error('Missing RESEND_API_KEY');
       return NextResponse.json(
         { error: 'Error de configuración del servidor (Resend)' },
@@ -28,13 +122,6 @@ export async function POST(request: Request) {
     }
 
     // 1. Validate Turnstile Token
-    if (!turnstileToken) {
-      return NextResponse.json(
-        { error: 'Falta el token de verificación' },
-        { status: 400 },
-      );
-    }
-
     const verifyResponse = await fetch(
       'https://challenges.cloudflare.com/turnstile/v0/siteverify',
       {
@@ -43,7 +130,7 @@ export async function POST(request: Request) {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: `secret=${encodeURIComponent(
-          process.env.TURNSTILE_SECRET_KEY,
+          turnstileSecret,
         )}&response=${encodeURIComponent(turnstileToken)}`,
       },
     );
@@ -59,6 +146,7 @@ export async function POST(request: Request) {
     }
 
     // 2. Send Email via Resend
+    const resend = new Resend(resendApiKey);
     const recipient =
       process.env.CONTACT_RECIPIENT_EMAIL || 'contacto@nuven.com.ar';
     const { error } = await resend.emails.send({
@@ -68,11 +156,11 @@ export async function POST(request: Request) {
       replyTo: email,
       html: `
         <h2>Nuevo mensaje de contacto</h2>
-        <p><strong>Nombre:</strong> ${nombre}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Teléfono:</strong> ${telefono || 'No proporcionado'}</p>
+        <p><strong>Nombre:</strong> ${escapeHtml(nombre)}</p>
+        <p><strong>Email:</strong> ${escapeHtml(email)}</p>
+        <p><strong>Teléfono:</strong> ${escapeHtml(telefono || 'No proporcionado')}</p>
         <p><strong>Mensaje:</strong></p>
-        <p>${descripcion}</p>
+        <p>${escapeHtml(descripcion).replace(/\n/g, '<br />')}</p>
       `,
     });
 

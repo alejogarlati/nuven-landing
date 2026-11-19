@@ -168,7 +168,7 @@ export function Hero() {
               </a>
 
               <a
-                href="#proyectos"
+                href="#servicios"
                 className="w-full sm:w-auto group relative px-8 py-4 rounded-full font-bold text-base text-white border border-white/10 bg-white/5 hover:bg-white/10 active:bg-white/20 transition-all flex items-center justify-center gap-3 active:scale-95"
               >
                 <div className="relative z-10 w-8 h-8 rounded-full border border-white/5 bg-white/10 flex items-center justify-center transition-transform group-hover:scale-110 group-active:scale-110 group-hover:border-[#CCFF00]/50 group-active:border-[#CCFF00]/50 group-hover:text-[#CCFF00] group-active:text-[#CCFF00]">

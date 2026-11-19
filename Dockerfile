@@ -1,25 +1,23 @@
-FROM node:24.10.0-alpine AS base
+FROM oven/bun:1-alpine AS base
 WORKDIR /app
-RUN corepack enable
 
 FROM base AS deps
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
 
 FROM base AS builder
 COPY . .
 COPY --from=deps /app/node_modules ./node_modules
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN pnpm build
+RUN bun run build
 
-FROM node:24.10.0-alpine AS runner
+FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
-RUN addgroup -g 1001 nodejs && adduser -S -u 1001 nextjs
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-USER nextjs
 EXPOSE 3000
-CMD ["node", "server.js"]
+CMD ["bun", "run", "start"]
